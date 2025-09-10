@@ -1,45 +1,35 @@
 name: VPS
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # run manually
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Ngrok & SSH
+      - name: Setup VPS with SSH and ngrok
         run: |
+          # Update system and install required packages
           sudo apt update -y
           sudo apt install -y openssh-server unzip curl
 
           # Start SSH service
           sudo service ssh start
 
+          # Set root password
+          echo "root:rootpass" | sudo chpasswd
+
           # Download ngrok
           curl -s https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip -o ngrok.zip
           unzip -o ngrok.zip
           chmod +x ngrok
 
-          # Authenticate with ngrok
+          # Authenticate ngrok
           ./ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
 
-          # Start ngrok tunnel for port 22, capture both stdout & stderr
-          ./ngrok tcp 22 --region us > ngrok.log 2>&1 &
-          sleep 12
+          # Start ngrok TCP tunnel for SSH and print all output
+          echo "Starting ngrok tunnel for SSH..."
+          ./ngrok tcp 22 --region us
 
-          # Set root password
-          echo "root:rootpass" | sudo chpasswd
-
-          echo "===================================="
-          echo " COPY THIS SSH COMMAND INTO TERMUX ↓"
-          echo
-
-          # Extract ngrok forwarding URL
-          ssh_cmd=$(grep -o "tcp://[0-9a-zA-Z\.]*:[0-9]*" ngrok.log | head -n 1 | sed 's/tcp:\/\///' | sed 's/:/ -p /')
-          echo "ssh root@${ssh_cmd}"
-          echo
-          echo "Password: rootpass"
-          echo "===================================="
-
-          # Keep job alive
+          # Keep workflow alive (optional if you want it to last forever)
           sleep infinity
