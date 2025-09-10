@@ -1,15 +1,14 @@
 name: VPS
 
 on:
-  workflow_dispatch:  # run manually
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup VPS with SSH and ngrok
+      - name: Setup VPS with SSH and latest ngrok
         run: |
-          # Update system and install required packages
           sudo apt update -y
           sudo apt install -y openssh-server unzip curl
 
@@ -19,17 +18,18 @@ jobs:
           # Set root password
           echo "root:rootpass" | sudo chpasswd
 
-          # Download ngrok
-          curl -s https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip -o ngrok.zip
+          # Download latest ngrok v3
+          NGROK_VER="3.7.0"
+          curl -L -o ngrok.zip https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.zip
           unzip -o ngrok.zip
           chmod +x ngrok
 
           # Authenticate ngrok
-          ./ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+          ./ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
 
-          # Start ngrok TCP tunnel for SSH and print all output
+          # Start ngrok TCP tunnel and print everything
           echo "Starting ngrok tunnel for SSH..."
           ./ngrok tcp 22 --region us
 
-          # Keep workflow alive (optional if you want it to last forever)
+          # Keep workflow alive
           sleep infinity
